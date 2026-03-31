@@ -1,0 +1,6 @@
+{
+  "app_dir": "apps/api",
+  "build_command": "pnpm build",
+  "start_command": "npx prisma migrate deploy && pnpm start:prod",
+  "cache_dependencies": false
+}
