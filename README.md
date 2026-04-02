@@ -297,4 +297,3 @@ pnpm prisma:migrate:deploy:api
 
 - [SPEC.md](./SPEC.md)
 - [AGENTS.md](./AGENTS.md)
-- [DEPLOY_ZEABUR.md](./DEPLOY_ZEABUR.md)
