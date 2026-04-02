@@ -1,0 +1,52 @@
+generator client {
+  provider = "prisma-client-js"
+}
+
+datasource db {
+  provider = "postgresql"
+  url      = env("DATABASE_URL")
+}
+
+model User {
+  id        String   @id @default(cuid())
+  email     String   @unique
+  password  String
+  name      String?
+  createdAt DateTime @default(now())
+  updatedAt DateTime @updatedAt
+  readings  Reading[]
+}
+
+model TarotCard {
+  id                String   @id @default(cuid())
+  slug              String   @unique
+  name              String
+  arcana            String
+  suit              String?
+  number            Int?
+  imageUrl          String
+  keywords          String[]
+  uprightMeaning    String
+  reversedMeaning   String
+  emotionalMeaning  String
+  relationshipMeaning String
+  careerMeaning     String
+  description       String
+  createdAt         DateTime @default(now())
+  updatedAt         DateTime @updatedAt
+}
+
+model Reading {
+  id                 String   @id @default(cuid())
+  userId             String?
+  user               User?    @relation(fields: [userId], references: [id], onDelete: SetNull)
+  question           String
+  spreadType         String
+  cardsJson          Json
+  interpretationJson Json
+  createdAt          DateTime @default(now())
+  updatedAt          DateTime @updatedAt
+
+  @@index([spreadType])
+  @@index([createdAt])
+}

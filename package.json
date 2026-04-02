@@ -1,0 +1,21 @@
+{
+  "name": "myapp",
+  "private": true,
+  "packageManager": "pnpm@10.11.1",
+  "engines": {
+    "node": "22.x"
+  },
+  "scripts": {
+    "postinstall": "pnpm prisma:generate:api",
+    "dev:web": "pnpm --filter web dev",
+    "dev:api": "pnpm --filter api start:dev",
+    "build:web": "pnpm --filter web build",
+    "build:api": "pnpm prisma:generate:api && pnpm --filter api build",
+    "start:web": "pnpm --filter web start",
+    "start:api": "pnpm --filter api start:prod",
+    "deploy:web": "pnpm --filter web build && pnpm --filter web start",
+    "deploy:api": "pnpm prisma:generate:api && pnpm --filter api build && pnpm --filter api start:prod",
+    "prisma:generate:api": "pnpm --filter api exec prisma generate",
+    "prisma:migrate:deploy:api": "pnpm --filter api exec prisma migrate deploy"
+  }
+}
