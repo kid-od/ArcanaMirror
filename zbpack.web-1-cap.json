@@ -1,4 +1,0 @@
-{
-  "build_command": "pnpm run build:web",
-  "start_command": "pnpm run start:web"
-}
