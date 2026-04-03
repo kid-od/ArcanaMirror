@@ -1,548 +1,416 @@
 # SPEC.md
 
-## Product Name
+## 产品名
 
-Working title: Arcana Mirror  
-Chinese working title: 镜中塔罗
+- 英文名：Arcana Mirror
+- 中文名：镜中塔罗
 
----
+## 一句话定义
 
-## Product Positioning
+Arcana Mirror 是一个把“抽牌”做成仪式交互、把“解读”做成温和反思内容的塔罗 Web 应用。
 
-Arcana Mirror is a tarot web application that combines:
+它不是恐惧式占卜产品，也不是依赖绝对预言的命运叙事工具。它更接近一个借由卡牌整理问题、识别情绪与观察模式的数字空间。
 
-- mystical visual atmosphere
-- modern reflective interpretation
-- ritual-like user flow
-- structured and emotionally supportive readings
+## 产品定位
 
-It is designed for users who want insight, reflection, emotional guidance, or a symbolic way to think through a current question.
+Arcana Mirror 采用 A + B 混合方向：
 
-This is not positioned as a fear-based fortune-telling product.
-It is positioned as a symbolic reflection experience.
+- A：神秘、克制、具有仪式感的视觉与交互
+- B：现代、支持性、反思导向的内容与阅读结构
 
----
+产品体验应当让用户感受到：
 
-## Product Direction
+- 平静
+- 被看见
+- 被温柔引导
+- 有节奏地进入问题
+- 在视觉上沉浸，但不会被装饰压倒
 
-### Chosen Direction
-A + B hybrid:
+## 当前范围
 
-- A: mystical and ritual-oriented visual design
-- B: modern healing, self-reflective content style
+当前版本已经覆盖的核心能力：
 
-### Experience Goal
-Users should feel:
+- 首页
+- 单张牌阅读
+- 三张牌阵阅读（过去 / 现在 / 未来）
+- 阅读结果页
+- 卡牌库与卡牌详情
+- 关于页
+- 中英文双语切换
+- 手势抽卡弹层
+- 摄像头失败时的 fallback 卷轴流程
+- 基础账号页与鉴权接口
 
-- calm
-- curious
-- emotionally seen
-- guided into reflection
-- visually immersed
+当前不在核心范围内的能力：
 
----
+- 高级牌阵
+- 阅读历史
+- 每日抽牌
+- 收藏 / 分享
+- 后台 CMS
+- 付费系统
 
-## Target Users
+说明：账号能力已经具备基础页面与 API，但当前产品主线仍然是“匿名可完成的阅读体验”。
 
-### Primary Users
-1. casual users curious about tarot
-2. users looking for emotional reflection tools
-3. users interested in symbolic/spiritual self-exploration
+## 目标用户
 
-### Secondary Users
-1. beginner tarot learners
-2. users who like aesthetic ritual-based products
-3. users who may later return for daily draws or reading history
+主要用户：
 
----
+- 对塔罗好奇、但不接受恐吓式表达的轻量用户
+- 想用象征工具帮助自己思考当下问题的人
+- 喜欢有节奏、有氛围、但不过度玄学化产品体验的用户
 
-## Core User Needs
+次要用户：
 
-Users want to:
+- 塔罗初学者
+- 喜欢卡牌、图像与仪式式交互的人
+- 未来可能回访每日抽牌或历史记录的用户
 
-- ask a meaningful question
-- draw cards in a way that feels intentional
-- receive a structured interpretation
-- feel guided, not judged
-- revisit the meaning later if needed
+## 核心设计原则
 
----
+- 神秘，但不廉价
+- 灵性，但不迷信
+- 反思，而不是定命
+- 优雅，但不堆砌
+- 温暖，但不煽情
+- 有仪式感，但不能让流程变笨重
 
-## MVP Scope
+## 信息架构
 
-The MVP includes:
+当前主要页面：
 
-1. Homepage
-2. Single-card reading flow
-3. Three-card spread flow (past / present / future)
-4. Reading result page
-5. Card library page
+- `/`：首页
+- `/draw/single`：单张牌阅读
+- `/draw/three`：三张牌阵阅读
+- `/reading/[id]`：阅读结果页
+- `/cards`：卡牌库
+- `/cards/[slug]`：卡牌详情页
+- `/about`：关于与使用方式说明
+- `/login`：登录页
+- `/register`：注册页
+- `/me`：当前用户页
 
-The MVP excludes:
-- advanced spreads
-- social sharing system
-- personalization engine
-- multi-language support
-- admin CMS
-- payment system
+## 首页规格
 
----
+首页负责三件事：
 
-## Information Architecture
+- 传递产品气质与价值
+- 帮用户选择阅读方式
+- 给第一次进入产品的用户一个足够低压力的入口
 
-### Pages
+首页至少需要清晰呈现：
 
-#### 1. `/`
-Homepage
+- 主标题与副标题
+- 单张牌入口
+- 三张牌入口
+- 卡牌库入口
+- 关于说明入口
 
-#### 2. `/draw/single`
-Single-card draw flow
+文案调性要求：
 
-#### 3. `/draw/three`
-Three-card spread flow
+- 诗意，但不晦涩
+- 安静，但不冷淡
+- 支持思考，而不是制造答案幻觉
 
-#### 4. `/reading/[id]`
-Reading result page
+## 单张牌阅读规格
 
-#### 5. `/cards`
-Card library index
+### 目标
 
-#### 6. `/cards/[slug]`
-Card detail page
-
-#### 7. `/about`
-About / guidance / disclaimer page
+为一个明确、集中的问题，提供快速但有情绪深度的阅读。
 
-Optional future:
-- `/login`
-- `/register`
-- `/history`
-- `/daily`
+### 流程
 
----
+1. 用户输入问题或选择提示问题
+2. 点击“开始仪式”
+3. 打开手势抽卡弹层
+4. 用户捏合一次，选出一张牌
+5. 牌面在弹层内原地翻开
+6. 用户再次捏合这张已经翻开的牌，进入完整阅读页
 
-## Homepage Specification
+### 结果要求
 
-### Goal
-Communicate product mood, explain value, and guide users into a reading.
+结果必须包含：
 
-### Sections
+- 牌面
+- 牌名
+- 正位 / 逆位
+- 关键词
+- 第一印象
+- 更完整的阅读展开
+- 引导式 reflection prompt
 
-#### Hero
-Content:
-- headline
-- subheadline
-- primary CTA: Start Reading
-- secondary CTA: Explore Cards
-
-Suggested headline style:
-- poetic
-- calm
-- slightly mystical
+## 三张牌阅读规格
 
-Example direction:
-- "What is your heart trying to ask today?"
-- "Draw a card. Look inward."
+### 目标
 
-#### Spread Entry Section
-Show entry points for:
-- single-card reading
-- three-card reading
+为更复杂、更需要上下文的问题提供“过去 / 现在 / 未来”的结构化阅读。
 
-Each option should include:
-- title
-- short description
-- CTA
+### 流程
 
-#### Daily Reflection Preview
-A lightweight section presenting:
-- one card of the day
-- a short reflective message
-
-#### Intro to Tarot
-Explain:
-- what tarot is in this product context
-- what upright / reversed means
-- how to use readings as reflection, not fixed destiny
-
-#### Footer
-Include:
-- about
-- privacy
-- disclaimer
-
----
-
-## Single-Card Reading Flow
-
-### Goal
-Offer a fast and emotionally meaningful reading for one focused question.
-
-### Steps
-
-#### Step 1: Ask a Question
-User can:
-- type a custom question
-- choose from prompts
-
-Suggested prompts:
-- love
-- work
-- study
-- relationships
-- self-growth
-
-#### Step 2: Shuffle
-User taps a shuffle action.
-Visual feedback should imply ritual and intention.
-
-#### Step 3: Draw
-User draws one card.
-
-#### Step 4: Reveal
-The card is flipped and interpreted.
-
-### Result Includes
-- card image
-- card name
-- upright or reversed
-- keywords
-- concise interpretation
-- guidance / reflection prompt
-
----
-
-## Three-Card Reading Flow
-
-### Goal
-Provide a richer reading around time progression or emotional progression.
-
-### Spread Type
-Past / Present / Future
-
-### Steps
-1. user asks a question
-2. user shuffles
-3. user draws three cards
-4. cards are revealed in sequence
-5. result page presents:
-   - each card
-   - position meaning
-   - combined interpretation
-
-### Result Includes
-- card 1: past
-- card 2: present
-- card 3: future
-- spread summary
-- suggested reflection / action prompt
-
----
-
-## Reading Result Page Specification
-
-### Goal
-Turn symbolic draw results into a readable and emotionally resonant interpretation.
-
-### Structure
-
-#### Header
-- user question
-- spread type
-- reading timestamp
-
-#### Card Section
-For each card show:
-- image
-- name
-- upright / reversed
-- keywords
-- short interpretation
-- position meaning
-
-#### Combined Reading Section
-Explain:
-- overall pattern
-- emotional theme
-- likely tension or transition
-- reflection-oriented guidance
-
-#### Reflection Prompt Section
-Examples:
-- What are you avoiding naming directly?
-- What deserves patience right now?
-- What would clarity look like in this situation?
-
-#### Actions
-- draw again
-- return home
-- save reading (future)
-- share summary (future)
-
----
-
-## Card Library Specification
-
-### Goal
-Provide a browsable tarot reference library and long-term content asset.
-
-### Card List Page
-Each card item should show:
-- card name
-- arcana type
-- short keyword line
-
-Users can filter by:
-- major arcana
-- cups
-- swords
-- pentacles
-- wands
-
-### Card Detail Page
-Each card should include:
-- name
-- arcana / suit / number
-- image
-- keywords
-- upright meaning
-- reversed meaning
-- emotional meaning
-- relationship meaning
-- career meaning
-
----
-
-## Visual Design Specification
-
-### Design Direction
-Mystical + modern healing
-
-### Visual Principles
-- dark atmosphere with clarity
-- elegant restraint
-- premium feeling
-- readable layouts
-- emotionally calm presentation
-
-### Color Direction
-Primary:
-- deep midnight blue / black-blue
-- warm off-white
-- restrained gold accents
-- violet support color
-
-Example direction:
-- background: deep navy
-- card surfaces: layered dark panels
-- accent: gold or muted mystical purple
-
-### Typography
-- heading: elegant serif or expressive display type
-- body: modern sans-serif for readability
-
-### Component Style
-- cards should feel tall, special, symbolic
-- buttons should be clean and intentional
-- borders should be subtle but visible
-- spacing should feel breathable
-
-### Background Treatment
-Allowed:
-- subtle stars
-- moon phase motifs
-- faint linework
-- very soft particle motion
-
-Not allowed:
-- excessive glow
-- cluttered occult decoration
-- low-quality fantasy styling
-
----
-
-## Interaction Specification
-
-### Key Principles
-- deliberate
-- smooth
-- ritual-like
-- not slow
-- not flashy for its own sake
-
-### Required Interaction Moments
-1. question input
-2. shuffle feedback
-3. draw selection
-4. card reveal
-5. reading expansion
-
-### Card Reveal
-Must feel meaningful.
-Recommended:
-- flip transition
-- fade-in card title
-- slight stagger for three-card spread
-
-### State Design
-Every core screen must handle:
-- loading
-- error
-- empty
-- success
-
----
-
-## Content Style Specification
-
-### Tone
+1. 用户输入问题或选择提示问题
+2. 点击“开始仪式”
+3. 打开手势抽卡弹层
+4. 用户每次捏合只选出一张牌
+5. 三张牌按过去、现在、未来顺序依次进入托盘
+6. 三张牌完成选择后，进入翻牌阶段
+7. 三张牌按顺序逐张翻开
+8. 只有三张牌全部翻开后，用户再次捏合才允许跳转阅读页
+
+### 结果要求
+
+结果必须包含：
+
+- 过去位置卡牌
+- 现在位置卡牌
+- 未来位置卡牌
+- 每个位置的解释
+- 整体模式、张力或过渡
+- 引导式 reflection prompt
+
+## 手势抽卡规格
+
+### 目标
+
+让抽卡过程更像“进入仪式”，而不是普通点击列表。
+
+### 触发方式
+
+- 用户在提问页点击“开始仪式”后才请求摄像头权限
+- 不在首页自动申请权限
+
+### 容器形态
+
+- 桌面端：居中 modal
+- 移动端：接近全屏的 sheet / overlay
+
+### 数据来源
+
+- 进入弹层后读取 `/cards`
+- 前端本地基于问题与 reset key 进行 seeded shuffle
+- 卷轴中的每一张都映射真实 `cardId`
+
+### 手势规则
+
+- 食指指尖驱动屏幕内的悬浮指针
+- 手在控制区左右移动时，卷轴会转动
+- 拇指与食指捏合被视为一次点击
+
+### 灵敏度要求
+
+- 卷轴移动必须带 deadzone，避免轻微抖动误触
+- 卷轴转动要有平滑和速度上限
+- 捏合阈值不能过高敏
+- 捏合后必须有释放冷却，避免连续误触
+
+### 三张牌额外约束
+
+- 每次捏合只能选一张牌
+- 翻牌阶段不允许提前进入阅读
+- 只有 `ready` 状态下才允许“再次捏合进入完整解读”
+
+### 失败与回退
+
+以下情况必须自动回退到原有卷轴流程：
+
+- 浏览器不支持摄像头或相关能力
+- 用户拒绝权限
+- 手势初始化失败
+- 长时间丢手
+- 用户手动点击“使用触控模式”
+
+回退要求：
+
+- 不中断当前问题
+- 不清空当前牌池
+- 保持同一套卡牌数据源
+- 仍然能完成抽牌、翻牌、进入阅读页
+
+## Fallback 卷轴流程规格
+
+fallback 继续使用原有仪式化卷轴交互，保留：
+
+- 问题输入
+- 仪式章节推进
+- 卷轴式选牌
+- RevealSequence 揭示
+- 进入完整阅读页
+
+当手势模式成功完成翻牌时，不应再在页面下方重复出现一套新的揭示流程。
+
+## 阅读结果页规格
+
+阅读结果页要从“先感知，再展开”的顺序组织内容。
+
+至少包含：
+
+- 用户问题
+- 牌阵类型
+- 创建时间
+- 每张牌的牌面与位置
+- 正位 / 逆位
+- 关键词
+- 第一印象
+- 更完整的解释
+- 行动或反思建议
+
+阅读页需要在移动端保持良好可读性，不允许因为视觉装饰牺牲层级和留白。
+
+## 卡牌库规格
+
+卡牌库负责两个目标：
+
+- 作为阅读前后的参考资料
+- 作为长期可扩展的内容资产
+
+列表页需要支持：
+
+- 查看全部卡牌
+- 按大阿尔卡那或花色筛选
+- 中英文切换
+
+详情页需要支持：
+
+- 基础牌义
+- 正位 / 逆位
+- 情绪、关系、事业等维度说明
+
+## 视觉与动效原则
+
+视觉方向：
+
+- 深色背景，但要清晰
+- 金色 / 柔和紫色点缀，但要克制
+- 字体有仪式感，但正文必须高可读
+- 保持呼吸感和层级，不堆满符号元素
+
+动效方向：
+
+- 翻牌必须有“被揭示”的感觉
+- 三张牌应有顺序感
+- 动效服务于节奏，不为炫技而存在
+- reduced motion 和粗指针设备仍然要可用
+
+## 内容语气规范
+
+推荐表达：
+
+- “这张牌提示……”
+- “你可能正处于一个……的阶段”
+- “这组牌邀请你回看……”
+- “一个有帮助的下一步也许是……”
+
+避免表达：
+
+- “这一定会发生”
+- “灾难正在逼近”
+- “你必须立刻……”
+- “你的命运已经注定”
+
+目标语气：
+
 - reflective
 - calm
 - symbolic
 - emotionally supportive
 - non-deterministic
 
-### Avoid
-- fear-based language
-- fixed destiny language
-- manipulative prediction
-- harsh judgment
+## 前后端契约
 
-### Preferred Expression Style
-Use:
-- "This card suggests..."
-- "You may be moving through..."
-- "This spread points toward..."
-- "A helpful reflection may be..."
+### 卡牌接口
 
-Avoid:
-- "This will definitely happen"
-- "You are doomed"
-- "You must..."
-- "This person is absolutely..."
+- `GET /cards`
+- `GET /cards/:slug`
 
----
+都支持 `locale` 查询参数，用于返回中英文内容。
 
-## Data Model Overview
+### 阅读接口
 
-### `tarot_cards`
-Fields:
-- id
-- slug
-- name
-- arcana
-- suit
-- number
-- image_url
-- keywords
-- upright_meaning
-- reversed_meaning
-- love_meaning
-- career_meaning
-- description
-
-### `readings`
-Fields:
-- id
-- user_id (nullable for anonymous mode)
-- question
-- spread_type
-- cards_json
-- interpretation_json
-- created_at
-
-### `users`
-Fields:
-- id
-- email
-- password
-- created_at
-- updated_at
-
----
-
-## API Overview
-
-### Reading APIs
 - `POST /readings/single`
 - `POST /readings/three`
 - `GET /readings/:id`
 
-### Card APIs
-- `GET /cards`
-- `GET /cards/:slug`
+创建阅读时的请求约束：
 
-### Auth APIs
-- `POST /auth/register`
-- `POST /auth/login`
-- `GET /auth/me`
+- `question`：必填，长度 `3-240`
+- `selectedCardIds`：可选
 
-Future:
-- `GET /history`
-- `POST /history/save`
+当 `selectedCardIds` 为空时：
 
----
+- 后端保留随机抽牌能力，兼容旧调用方
 
-## MVP Success Metrics
+当 `selectedCardIds` 存在时：
 
-The MVP is successful if:
+- 单张牌接口必须传 1 个 id
+- 三张牌接口必须传 3 个 id
+- 所有 id 必须唯一
+- 所有 id 必须存在于当前卡牌池
+- 后端必须以这些 id 作为最终牌面来源
+- 正位 / 逆位仍由后端随机决定
 
-1. users can complete a reading without confusion
-2. the flow feels immersive but efficient
-3. the interpretation is readable and emotionally meaningful
-4. the product looks premium and coherent
-5. the architecture supports future expansion
+三张牌的顺序约定：
 
----
+- 第 1 张映射 `past`
+- 第 2 张映射 `present`
+- 第 3 张映射 `future`
 
-## Risks and Constraints
+### 阅读结果返回要求
 
-### Risks
-- becoming visually cliché
-- overloading the MVP
-- using weak or deterministic copy
-- building too many spread types too early
+返回结构保持稳定，至少包含：
 
-### Constraints
-- single developer scope
-- MVP must remain small
-- frontend and backend remain separated
-- API design should remain reusable for future mobile support
+- `id`
+- `question`
+- `spreadType`
+- `createdAt`
+- `cards`
+- `interpretation`
 
----
+其中每张牌至少包含：
 
-## Roadmap After MVP
+- `cardId`
+- `slug`
+- `name`
+- `orientation`
+- `position`
+- `positionLabel`
+- `meaning`
+- `context`
 
-### Phase 2
-- login / register integration
-- reading history
-- daily card
-- save reading
+## 数据模型概览
 
-### Phase 3
-- more spread types
-- personalized prompts
-- AI-enhanced interpretation
-- shareable cards / results
+核心数据实体：
 
-### Phase 4
-- multi-language
-- mobile app reuse via same API
-- admin content management
+- `tarot_cards`
+- `readings`
+- `users`
 
----
+当前这轮抽卡交互优化不需要 Prisma schema 变更，也不需要新增表。
 
-## Final Product Principle
+## 验收标准
 
-Arcana Mirror should feel like:
+以下条件成立时，可以认为当前版本符合预期：
 
-- a symbolic mirror
-- a private ritual
-- a calm digital sanctuary
-- a guided moment of reflection
+1. 用户可以从首页或抽卡页顺畅进入单张牌与三张牌阅读。
+2. 手势模式下可以完成摄像头授权、卷轴转动、捏合选牌、翻牌与进入阅读。
+3. 手势灵敏度足够克制，不会因为轻微抖动频繁误触。
+4. 三张牌流程中，三张全部翻开前不能进入阅读页。
+5. 摄像头不可用或识别失败时，会自动回退到 fallback 卷轴流程。
+6. 中英文切换会同步影响流程文案、卡牌内容和阅读结果。
+7. 阅读结果的语气保持支持性，不出现恐吓式或绝对化表达。
+8. 前后端接口返回结构稳定，适合后续移动端复用。
 
-It should not feel like:
+## 后续路线
 
-- a noisy fortune gimmick
-- a fear-based prediction tool
-- a cheap occult template site
+下一阶段优先考虑：
+
+- 阅读历史
+- 每日抽牌
+- 收藏与分享
+- 更丰富的结果页组织
+- 更细粒度的手势参数调节
+
+不建议在短期内优先投入：
+
+- 过多高级牌阵
+- 复杂个性化引擎
+- 后台 CMS
+- 支付体系

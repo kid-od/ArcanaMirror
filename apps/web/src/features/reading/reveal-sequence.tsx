@@ -112,7 +112,11 @@ export function RevealSequence({
                 ...revealTransition,
                 delay: reducedMotion ? 0 : index * 0.14,
               }}
-              className={spreadType === 'single' ? 'mx-auto max-w-sm' : ''}
+              className={
+                spreadType === 'single'
+                  ? 'mx-auto w-full max-w-[20rem] sm:max-w-[21rem] md:max-w-[22rem]'
+                  : ''
+              }
             >
               <motion.p
                 initial={reducedMotion ? false : { opacity: 0, y: 10 }}

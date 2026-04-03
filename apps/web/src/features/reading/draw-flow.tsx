@@ -1,5 +1,6 @@
 'use client';
 
+import dynamic from 'next/dynamic';
 import Link from 'next/link';
 import { useRouter } from 'next/navigation';
 import { useReducedMotion } from 'motion/react';
@@ -7,12 +8,20 @@ import { useCallback, useRef, useState, useTransition } from 'react';
 import { useCoarsePointer } from '@/src/hooks/use-coarse-pointer';
 import { useLocale } from '@/src/i18n/locale-provider';
 import {
+  CardSummary,
   createSingleReading,
   createThreeReading,
+  getCards,
   ReadingResponse,
 } from '@/src/lib/tarot-api';
 import { RevealSequence } from './reveal-sequence';
 import { RitualCarouselStage, RitualChapter } from './ritual-scroll-stage';
+
+const RitualGestureModal = dynamic(
+  () =>
+    import('./ritual-gesture-modal').then((module) => module.RitualGestureModal),
+  { ssr: false },
+);
 
 type DrawFlowProps = {
   spreadType: 'single' | 'three';
@@ -47,14 +56,30 @@ export function DrawFlow({
   const [ritualStarted, setRitualStarted] = useState(false);
   const [canConfirm, setCanConfirm] = useState(false);
   const [error, setError] = useState('');
+  const [gestureNotice, setGestureNotice] = useState('');
   const [isSubmitting, setIsSubmitting] = useState(false);
+  const [isDeckLoading, setIsDeckLoading] = useState(false);
   const [reading, setReading] = useState<ReadingResponse | null>(null);
+  const [ritualCards, setRitualCards] = useState<CardSummary[]>([]);
+  const [gestureModalOpen, setGestureModalOpen] = useState(false);
+  const [fallbackActive, setFallbackActive] = useState(false);
   const [resetKey, setResetKey] = useState(0);
   const [isNavigating, startNavigation] = useTransition();
   const questionReady = question.trim().length >= 3;
   const readingReady = reading !== null;
   const reducedMotion = Boolean(prefersReducedMotion || isCoarsePointer);
   const chapterLabels: Record<RitualChapter, string> = messages.drawFlow.chapters;
+  const deckSeed = `${spreadType}:${resetKey}:${question.trim() || 'blank'}`;
+  const shouldRenderFallbackFlow = fallbackActive || isSubmitting || readingReady;
+
+  const openReading = useCallback(
+    (readingId: string) => {
+      startNavigation(() => {
+        router.push(`/reading/${readingId}`);
+      });
+    },
+    [router],
+  );
 
   const resetRitualState = useCallback(
     (scrollToQuestion: boolean) => {
@@ -63,6 +88,9 @@ export function DrawFlow({
       setCanConfirm(false);
       setReading(null);
       setError('');
+      setGestureNotice('');
+      setGestureModalOpen(false);
+      setFallbackActive(false);
       setResetKey((current) => current + 1);
 
       if (scrollToQuestion) {
@@ -89,7 +117,71 @@ export function DrawFlow({
     [readingReady],
   );
 
-  async function handleSealDraw() {
+  const createReadingRequest = useCallback(
+    async (selectedCardIds: string[]) => {
+      return spreadType === 'single'
+        ? createSingleReading(question.trim(), locale, selectedCardIds)
+        : createThreeReading(question.trim(), locale, selectedCardIds);
+    },
+    [locale, question, spreadType],
+  );
+
+  const ensureRitualCardsLoaded = useCallback(async () => {
+    if (ritualCards.length > 0) {
+      return ritualCards;
+    }
+
+    setIsDeckLoading(true);
+
+    try {
+      const response = await getCards(locale);
+
+      if (response.items.length === 0) {
+        throw new Error(messages.drawFlow.errors.deckUnavailable);
+      }
+
+      setRitualCards(response.items);
+      return response.items;
+    } catch (loadError) {
+      if (loadError instanceof Error) {
+        throw loadError;
+      }
+
+      throw new Error(messages.drawFlow.errors.deckUnavailable);
+    } finally {
+      setIsDeckLoading(false);
+    }
+  }, [locale, messages.drawFlow.errors.deckUnavailable, ritualCards]);
+
+  const activateFallback = useCallback(
+    (
+      reason:
+        | 'unsupported'
+        | 'permission-denied'
+        | 'tracking-lost'
+        | 'manual'
+        | 'initialization-failed',
+    ) => {
+      setGestureModalOpen(false);
+      setFallbackActive(true);
+      setRitualStarted(true);
+      setActiveChapter('descent');
+      setCanConfirm(false);
+      setReading(null);
+      setError('');
+      setGestureNotice(messages.drawFlow.gesture.fallbackReasons[reason]);
+
+      window.requestAnimationFrame(() => {
+        ritualSectionRef.current?.scrollIntoView({
+          behavior: reducedMotion ? 'auto' : 'smooth',
+          block: 'start',
+        });
+      });
+    },
+    [messages.drawFlow.gesture.fallbackReasons, reducedMotion],
+  );
+
+  async function handleSealDraw(selectedCardIds: string[]) {
     if (!questionReady) {
       setError(messages.drawFlow.errors.questionRequired);
       return;
@@ -103,10 +195,7 @@ export function DrawFlow({
     setError('');
 
     try {
-      const response =
-        spreadType === 'single'
-          ? await createSingleReading(question.trim(), locale)
-          : await createThreeReading(question.trim(), locale);
+      const response = await createReadingRequest(selectedCardIds);
 
       setReading(response);
       setActiveChapter('reveal');
@@ -132,7 +221,14 @@ export function DrawFlow({
   function handleQuestionChange(nextQuestion: string) {
     if (
       nextQuestion !== question &&
-      (ritualStarted || readingReady || error || canConfirm || activeChapter !== 'question')
+      (ritualStarted ||
+        readingReady ||
+        error ||
+        canConfirm ||
+        activeChapter !== 'question' ||
+        gestureModalOpen ||
+        fallbackActive ||
+        gestureNotice)
     ) {
       resetRitualState(false);
     } else {
@@ -148,19 +244,32 @@ export function DrawFlow({
     resetRitualState(true);
   }
 
-  function handleBeginRitual() {
+  async function handleBeginRitual() {
     if (!questionReady) {
       setError(messages.drawFlow.errors.questionRequired);
       return;
     }
 
-    setRitualStarted(true);
-    setActiveChapter('descent');
     setError('');
-    ritualSectionRef.current?.scrollIntoView({
-      behavior: reducedMotion ? 'auto' : 'smooth',
-      block: 'start',
-    });
+    setGestureNotice('');
+    setFallbackActive(false);
+    setReading(null);
+    setCanConfirm(false);
+    setRitualStarted(false);
+    setActiveChapter('descent');
+    setResetKey((current) => current + 1);
+
+    try {
+      await ensureRitualCardsLoaded();
+      setGestureModalOpen(true);
+    } catch (loadError) {
+      const message =
+        loadError instanceof Error
+          ? loadError.message
+          : messages.drawFlow.errors.deckUnavailable;
+
+      setError(message);
+    }
   }
 
   return (
@@ -274,10 +383,12 @@ export function DrawFlow({
               <button
                 type="button"
                 onClick={handleBeginRitual}
-                disabled={!questionReady}
+                disabled={!questionReady || isDeckLoading}
                 className="inline-flex rounded-full bg-[var(--color-accent)] px-6 py-3 text-sm font-medium text-[#1a1524] transition-transform hover:-translate-y-0.5 disabled:cursor-not-allowed disabled:opacity-45"
               >
-                {messages.drawFlow.beginRitual}
+                {isDeckLoading
+                  ? messages.drawFlow.gesture.loadingDeck
+                  : messages.drawFlow.beginRitual}
               </button>
               <Link
                 href="/cards"
@@ -292,52 +403,78 @@ export function DrawFlow({
                 ? messages.drawFlow.questionReady
                 : messages.drawFlow.questionNotReady}
             </p>
+
+            {gestureNotice ? (
+              <div className="mt-4 rounded-[1.15rem] border border-white/10 bg-black/10 px-4 py-3 text-sm leading-7 text-[var(--color-muted)]">
+                {gestureNotice}
+              </div>
+            ) : null}
           </div>
         </div>
       </section>
 
-      <section
-        ref={ritualSectionRef}
-        style={{ scrollMarginTop: 'calc(var(--site-header-height) + 1rem)' }}
-      >
-        <RitualCarouselStage
-          key={resetKey}
+      {gestureModalOpen && ritualCards.length > 0 ? (
+        <RitualGestureModal
           locale={locale}
           spreadType={spreadType}
           question={question}
-          questionReady={questionReady}
-          ritualStarted={ritualStarted}
-          deckSeed={`${spreadType}:${resetKey}:${question.trim() || 'blank'}`}
-          canConfirm={canConfirm}
-          readingReady={readingReady}
-          isSubmitting={isSubmitting}
-          error={error}
-          onSealDraw={handleSealDraw}
-          onChapterChange={handleStageChange}
-        />
-      </section>
-
-      <section
-        ref={revealSectionRef}
-        data-ritual-stage="reveal"
-        style={{ scrollMarginTop: 'calc(var(--site-header-height) + 1rem)' }}
-      >
-        <RevealSequence
-          locale={locale}
-          spreadType={spreadType}
-          reading={reading}
-          isNavigating={isNavigating}
-          onOpenReading={() => {
-            if (!reading) {
-              return;
-            }
-
-            startNavigation(() => {
-              router.push(`/reading/${reading.id}`);
-            });
+          cards={ritualCards}
+          deckSeed={deckSeed}
+          onClose={() => {
+            setGestureModalOpen(false);
+            setActiveChapter('question');
           }}
+          onFallback={activateFallback}
+          onCreateReading={createReadingRequest}
+          onOpenReading={openReading}
         />
-      </section>
+      ) : null}
+
+      {shouldRenderFallbackFlow ? (
+        <>
+          <section
+            ref={ritualSectionRef}
+            style={{ scrollMarginTop: 'calc(var(--site-header-height) + 1rem)' }}
+          >
+            <RitualCarouselStage
+              key={deckSeed}
+              locale={locale}
+              spreadType={spreadType}
+              question={question}
+              questionReady={questionReady}
+              ritualStarted={ritualStarted}
+              cards={ritualCards}
+              deckSeed={deckSeed}
+              canConfirm={canConfirm}
+              readingReady={readingReady}
+              isSubmitting={isSubmitting}
+              error={error}
+              onSealDraw={handleSealDraw}
+              onChapterChange={handleStageChange}
+            />
+          </section>
+
+          <section
+            ref={revealSectionRef}
+            data-ritual-stage="reveal"
+            style={{ scrollMarginTop: 'calc(var(--site-header-height) + 1rem)' }}
+          >
+            <RevealSequence
+              locale={locale}
+              spreadType={spreadType}
+              reading={reading}
+              isNavigating={isNavigating}
+              onOpenReading={() => {
+                if (!reading) {
+                  return;
+                }
+
+                openReading(reading.id);
+              }}
+            />
+          </section>
+        </>
+      ) : null}
     </div>
   );
 }

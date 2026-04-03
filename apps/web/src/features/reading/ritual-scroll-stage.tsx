@@ -6,6 +6,13 @@ import { useEffect, useMemo, useState } from 'react';
 import { useCoarsePointer } from '@/src/hooks/use-coarse-pointer';
 import { getMessages } from '@/src/i18n/messages';
 import { AppLocale } from '@/src/i18n/shared';
+import { CardSummary } from '@/src/lib/tarot-api';
+import {
+  createRitualDeck,
+  getRibbonWindow,
+  RitualDeckCard,
+  wrapIndex,
+} from './ritual-deck';
 
 export type RitualChapter =
   | 'question'
@@ -22,141 +29,15 @@ type RitualScrollStageProps = {
   question: string;
   questionReady: boolean;
   ritualStarted: boolean;
+  cards: CardSummary[];
   deckSeed: string;
   canConfirm: boolean;
   readingReady: boolean;
   isSubmitting: boolean;
   error: string;
-  onSealDraw: () => void;
+  onSealDraw: (selectedCardIds: string[]) => void;
   onChapterChange: (chapter: RitualStage) => void;
 };
-
-type DeckRibbonCard = {
-  id: string;
-  name: string;
-  tilt: number;
-  lift: number;
-  accent: 'gold' | 'violet' | 'mist';
-};
-
-const majorArcana = [
-  'The Fool',
-  'The Magician',
-  'The High Priestess',
-  'The Empress',
-  'The Emperor',
-  'The Hierophant',
-  'The Lovers',
-  'The Chariot',
-  'Strength',
-  'The Hermit',
-  'Wheel of Fortune',
-  'Justice',
-  'The Hanged Man',
-  'Death',
-  'Temperance',
-  'The Devil',
-  'The Tower',
-  'The Star',
-  'The Moon',
-  'The Sun',
-  'Judgement',
-  'The World',
-] as const;
-
-const minorRanks = [
-  'Ace',
-  'Two',
-  'Three',
-  'Four',
-  'Five',
-  'Six',
-  'Seven',
-  'Eight',
-  'Nine',
-  'Ten',
-  'Page',
-  'Knight',
-  'Queen',
-  'King',
-] as const;
-
-const minorSuits = ['Wands', 'Cups', 'Swords', 'Pentacles'] as const;
-
-function slugify(value: string) {
-  return value
-    .toLowerCase()
-    .replace(/[^a-z0-9]+/g, '-')
-    .replace(/(^-|-$)/g, '');
-}
-
-function hashString(value: string) {
-  let hash = 1779033703 ^ value.length;
-
-  for (let index = 0; index < value.length; index += 1) {
-    hash = Math.imul(hash ^ value.charCodeAt(index), 3432918353);
-    hash = (hash << 13) | (hash >>> 19);
-  }
-
-  return (hash >>> 0) || 1;
-}
-
-function createSeededRandom(seed: string) {
-  let state = hashString(seed);
-
-  return () => {
-    state += 0x6d2b79f5;
-
-    let next = Math.imul(state ^ (state >>> 15), 1 | state);
-    next ^= next + Math.imul(next ^ (next >>> 7), 61 | next);
-
-    return ((next ^ (next >>> 14)) >>> 0) / 4294967296;
-  };
-}
-
-function shuffleCards<T>(items: T[], random: () => number) {
-  const next = [...items];
-
-  for (let index = next.length - 1; index > 0; index -= 1) {
-    const swapIndex = Math.floor(random() * (index + 1));
-    [next[index], next[swapIndex]] = [next[swapIndex], next[index]];
-  }
-
-  return next;
-}
-
-function createDeckRibbon(seed: string): DeckRibbonCard[] {
-  const random = createSeededRandom(seed);
-  const names = [
-    ...majorArcana,
-    ...minorSuits.flatMap((suit) => minorRanks.map((rank) => `${rank} of ${suit}`)),
-  ];
-
-  return shuffleCards(names, random).map((name, index) => ({
-    id: `${slugify(name)}-${index}`,
-    name,
-    tilt: Math.round((random() * 16 - 8) * 10) / 10,
-    lift: Math.round((random() * 12 - 6) * 10) / 10,
-    accent: index % 3 === 0 ? 'gold' : index % 3 === 1 ? 'violet' : 'mist',
-  }));
-}
-
-function wrapIndex(index: number, length: number) {
-  return ((index % length) + length) % length;
-}
-
-function getRibbonWindow(deck: DeckRibbonCard[], centerIndex: number, span: number) {
-  return Array.from({ length: span * 2 + 1 }, (_, index) => {
-    const offset = index - span;
-    const deckIndex = wrapIndex(centerIndex + offset, deck.length);
-
-    return {
-      card: deck[deckIndex],
-      deckIndex,
-      offset,
-    };
-  });
-}
 
 function getQuestionExcerpt(
   question: string,
@@ -249,7 +130,7 @@ function DeckBack({
   onSelect,
 }: {
   locale: AppLocale;
-  card: DeckRibbonCard;
+  card: RitualDeckCard;
   distance: number;
   selected: boolean;
   disabled: boolean;
@@ -404,6 +285,7 @@ export function RitualCarouselStage({
   question,
   questionReady,
   ritualStarted,
+  cards,
   deckSeed,
   canConfirm,
   readingReady,
@@ -417,7 +299,7 @@ export function RitualCarouselStage({
   const messages = getMessages(locale);
   const simplifiedMotion = Boolean(prefersReducedMotion || isCoarsePointer);
   const requiredSelections = spreadType === 'single' ? 1 : 3;
-  const deck = useMemo(() => createDeckRibbon(deckSeed), [deckSeed]);
+  const deck = useMemo(() => createRitualDeck(cards, deckSeed), [cards, deckSeed]);
   const slotLabels =
     spreadType === 'single'
       ? [messages.ritualStage.positions.single]
@@ -426,7 +308,7 @@ export function RitualCarouselStage({
           messages.ritualStage.positions.present,
           messages.ritualStage.positions.future,
         ];
-  const [selectedCards, setSelectedCards] = useState<DeckRibbonCard[]>([]);
+  const [selectedCards, setSelectedCards] = useState<RitualDeckCard[]>([]);
   const [centerIndex, setCenterIndex] = useState(0);
   const [hasInteracted, setHasInteracted] = useState(false);
   const selectionCount = selectedCards.length;
@@ -440,13 +322,17 @@ export function RitualCarouselStage({
     requiredSelections,
   );
   const progressWidth = getProgressWidth(stage, selectionCount, requiredSelections);
-  const visibleCards = getRibbonWindow(deck, centerIndex, 4);
+  const visibleCards = deck.length === 0 ? [] : getRibbonWindow(deck, centerIndex, 4);
 
   useEffect(() => {
     onChapterChange(stage);
   }, [onChapterChange, stage]);
 
   function stepRibbon(direction: 'prev' | 'next') {
+    if (deck.length === 0) {
+      return;
+    }
+
     setHasInteracted(true);
     setCenterIndex((current) =>
       wrapIndex(current + (direction === 'next' ? 1 : -1), deck.length),
@@ -504,9 +390,13 @@ export function RitualCarouselStage({
       return;
     }
 
-    setHasInteracted(true);
-
     const card = deck[deckIndex];
+
+    if (!card) {
+      return;
+    }
+
+    setHasInteracted(true);
 
     setCenterIndex(deckIndex);
     setSelectedCards((current) => {
@@ -612,7 +502,7 @@ export function RitualCarouselStage({
               </div>
 
               <div className="rounded-full border border-white/10 bg-black/15 px-3 py-2 text-[11px] uppercase tracking-[0.28em] text-[var(--color-accent-soft)]">
-                {messages.ritualStage.focus} {centerIndex + 1}
+                {messages.ritualStage.focus} {deck.length === 0 ? 0 : centerIndex + 1}
               </div>
             </div>
 
@@ -731,7 +621,7 @@ export function RitualCarouselStage({
                 </Link>
                 <button
                   type="button"
-                  onClick={onSealDraw}
+                  onClick={() => onSealDraw(selectedCards.map((card) => card.id))}
                   disabled={!questionReady || !canConfirm || isSubmitting || readingReady}
                   className="inline-flex justify-center rounded-full bg-[var(--color-accent)] px-5 py-3 text-sm font-medium text-[#1a1524] transition-transform hover:-translate-y-0.5 disabled:cursor-not-allowed disabled:opacity-45"
                 >

@@ -180,16 +180,24 @@ export async function getReading(id: string, locale?: AppLocale) {
   return apiRequest<ReadingResponse>(withLocale(`/readings/${id}`, locale));
 }
 
-export async function createSingleReading(question: string, locale?: AppLocale) {
+export async function createSingleReading(
+  question: string,
+  locale?: AppLocale,
+  selectedCardIds?: string[],
+) {
   return apiRequest<ReadingResponse>(withLocale('/readings/single', locale), {
     method: 'POST',
-    body: JSON.stringify({ question }),
+    body: JSON.stringify({ question, selectedCardIds }),
   });
 }
 
-export async function createThreeReading(question: string, locale?: AppLocale) {
+export async function createThreeReading(
+  question: string,
+  locale?: AppLocale,
+  selectedCardIds?: string[],
+) {
   return apiRequest<ReadingResponse>(withLocale('/readings/three', locale), {
     method: 'POST',
-    body: JSON.stringify({ question }),
+    body: JSON.stringify({ question, selectedCardIds }),
   });
 }
