@@ -132,6 +132,8 @@ const messages = {
         questionRequired:
           'Write a focused question or choose one of the suggested prompts first.',
         readingUnavailable: 'The reading could not be created just now.',
+        deckUnavailable:
+          'The card catalog could not be prepared for the ritual just now.',
       },
       chapters: {
         question: 'Question',
@@ -139,6 +141,58 @@ const messages = {
         shuffle: 'Shuffle',
         seal: 'Seal',
         reveal: 'Reveal',
+      },
+      gesture: {
+        loadingDeck: 'Preparing the deck...',
+        modalEyebrow: 'Gesture Ritual',
+        singleTitle: 'Turn one card through gesture',
+        threeTitle: 'Turn the spread with your hand',
+        close: 'Close',
+        useFallback: 'Use touch ritual',
+        instructionsEyebrow: 'How It Works',
+        instructionsMove:
+          'Keep one hand in view and move gently left or right to turn the ribbon.',
+        instructionsPinch:
+          'Pinch thumb and index finger together to select a card when the pointer is resting over it.',
+        instructionsOpen:
+          'After the card turns, pinch once more on the revealed card to enter the full reading.',
+        surfaceEyebrow: 'Gesture Surface',
+        selectSingleTitle: 'Let one card gather at the center.',
+        selectThreeTitle: 'Draw past, present, and future in sequence.',
+        turningTitle: 'The card is turning toward the light.',
+        revealingTitle: 'The reveal is unfolding.',
+        revealReadyTitle: 'The card is ready to be read.',
+        turningHint:
+          'Stay with the chamber for a moment while the selected cards align with the reading.',
+        revealingHint:
+          'The cards are turning in sequence. Let the reveal settle before you reach for the deeper interpretation.',
+        readyHint:
+          'The revealed cards can now carry you into the full interpretation with one more pinch.',
+        singleHint:
+          'Move slowly, let one veiled card settle under the pointer, then pinch to choose it.',
+        threeHint:
+          'Draw three cards one by one. Each selected card rests below before the spread turns in sequence.',
+        readyToOpen:
+          'Pinch on the revealed card to continue into the full reading.',
+        statusBooting: 'Preparing the gesture chamber...',
+        statusPermission: 'Allow the camera to begin the gesture ritual.',
+        statusReady: 'Camera ready. Move your hand into view.',
+        statusSearching: 'Looking for a steady hand...',
+        statusTracking: 'Hand found. Move and pinch to guide the draw.',
+        statusTurning: 'Turning the chosen card...',
+        statusRevealReady: 'The reveal is ready for one more pinch.',
+        fallbackReasons: {
+          unsupported:
+            'This browser or device could not support camera gesture control, so the ritual has returned to the touch ribbon below.',
+          'permission-denied':
+            'Camera permission was not granted, so the ritual has returned to the touch ribbon below.',
+          'tracking-lost':
+            'The hand could not be tracked steadily, so the ritual has returned to the touch ribbon below.',
+          manual:
+            'The gesture chamber was closed and the touch ribbon is ready below.',
+          'initialization-failed':
+            'The gesture chamber could not finish preparing, so the ritual has returned to the touch ribbon below.',
+        },
       },
     },
     ritualStage: {
@@ -336,13 +390,11 @@ const messages = {
       majorArcana: 'Major Arcana',
       minorArcana: 'Minor Arcana',
       suitSuffix: 'Suit',
-      softReveal: 'soft reveal',
       cardBack: 'card back',
       arcanaMirror: 'Arcana Mirror',
       holdQuestion: 'Hold the question gently.',
       uprightPerspective: 'Upright perspective',
       reversedPerspective: 'Reversed perspective',
-      emerging: 'A shape is beginning to emerge.',
       gathering: 'The card is still gathering itself.',
       altSuffix: 'tarot card',
     },
@@ -475,6 +527,7 @@ const messages = {
       errors: {
         questionRequired: '先写下一个更聚焦的问题，或选择下方提示中的一个。',
         readingUnavailable: '这次阅读暂时还无法生成，请稍后再试。',
+        deckUnavailable: '这次仪式暂时还无法准备好卡组，请稍后再试。',
       },
       chapters: {
         question: '提问',
@@ -482,6 +535,53 @@ const messages = {
         shuffle: '洗牌',
         seal: '封牌',
         reveal: '揭示',
+      },
+      gesture: {
+        loadingDeck: '正在准备卡组...',
+        modalEyebrow: '手势仪式',
+        singleTitle: '用手势翻开这一张牌',
+        threeTitle: '用双手带动整组牌阵',
+        close: '关闭',
+        useFallback: '改用触控仪式',
+        instructionsEyebrow: '操作说明',
+        instructionsMove: '保持单手在画面中，缓慢左右移动，让牌带跟着你的手势转动。',
+        instructionsPinch:
+          '当指针停在想要的卡牌上方时，捏合拇指与食指，就能把它选出来。',
+        instructionsOpen:
+          '当卡牌翻开后，再对着已揭示的牌捏合一次，就能进入完整解读。',
+        surfaceEyebrow: '手势操作区',
+        selectSingleTitle: '让一张牌慢慢停在中心。',
+        selectThreeTitle: '依次抽出过去、现在与未来。',
+        turningTitle: '卡牌正在向光慢慢转身。',
+        revealingTitle: '揭示正在展开。',
+        revealReadyTitle: '这张牌已经准备好被读懂。',
+        turningHint:
+          '再陪这间仪式室待一会儿，让你选中的牌和阅读结果慢慢对齐。',
+        revealingHint:
+          '卡牌正在按顺序翻开。先让揭示安静落定，再进入更深的解读。',
+        readyHint: '现在只要再捏合一次，就能顺着这些牌进入完整阅读。',
+        singleHint: '慢慢移动，让一张未揭示的牌停在指针下方，再捏合把它选出来。',
+        threeHint:
+          '一张一张地抽牌。每次被选中的牌都会先安放到底部，随后整组牌再依次翻开。',
+        readyToOpen: '对着已揭示的牌再捏合一次，就能继续进入完整阅读。',
+        statusBooting: '正在准备手势仪式室...',
+        statusPermission: '请允许摄像头权限，仪式才会开始回应。',
+        statusReady: '摄像头已准备好，把手放进画面里。',
+        statusSearching: '正在寻找一只稳定的手...',
+        statusTracking: '已经识别到手势，开始移动与捏合吧。',
+        statusTurning: '正在翻开你选中的牌...',
+        statusRevealReady: '这次揭示已经准备好，只差再一次捏合。',
+        fallbackReasons: {
+          unsupported:
+            '当前浏览器或设备暂时不适合摄像头手势控制，所以仪式已经回到底部的触控牌带。',
+          'permission-denied':
+            '你没有授予摄像头权限，所以仪式已经回到底部的触控牌带。',
+          'tracking-lost':
+            '手势识别暂时无法保持稳定，所以仪式已经回到底部的触控牌带。',
+          manual: '手势仪式室已经关闭，底部的触控牌带已经准备好。',
+          'initialization-failed':
+            '手势仪式室暂时没能完成准备，所以仪式已经回到底部的触控牌带。',
+        },
       },
     },
     ritualStage: {
@@ -673,13 +773,11 @@ const messages = {
       majorArcana: '大阿尔卡那',
       minorArcana: '小阿尔卡那',
       suitSuffix: '花色',
-      softReveal: '渐显中',
       cardBack: '牌背',
       arcanaMirror: 'Arcana Mirror',
       holdQuestion: '轻轻托住你的问题。',
       uprightPerspective: '正位视角',
       reversedPerspective: '逆位视角',
-      emerging: '一个轮廓正在慢慢显现。',
       gathering: '这张牌还在聚拢它的形状。',
       altSuffix: '塔罗牌',
     },

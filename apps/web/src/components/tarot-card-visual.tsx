@@ -2,7 +2,7 @@ import Image from 'next/image';
 import { getMessages } from '@/src/i18n/messages';
 import { AppLocale } from '@/src/i18n/shared';
 
-type TarotCardVisualMode = 'reveal' | 'back' | 'partial';
+type TarotCardVisualMode = 'reveal' | 'back';
 
 type TarotCardVisualProps = {
   locale?: AppLocale;
@@ -59,24 +59,18 @@ function BackFace({
   name,
   label,
   caption,
-  veiledLabel,
-  partial,
   compact,
 }: {
   name: string;
   label?: string;
   caption?: string;
-  veiledLabel?: string;
-  partial?: boolean;
   compact?: boolean;
 }) {
   return (
     <div
       className={`relative aspect-[3/5] overflow-hidden ${
         compact ? 'rounded-[1.2rem]' : 'rounded-[1.45rem]'
-      } border border-[var(--color-accent)]/18 bg-[linear-gradient(180deg,_rgba(12,18,36,0.96),_rgba(27,34,57,0.96))] ${
-        partial ? 'shadow-[0_18px_50px_rgba(0,0,0,0.22)]' : ''
-      }`}
+      } border border-[var(--color-accent)]/18 bg-[linear-gradient(180deg,_rgba(12,18,36,0.96),_rgba(27,34,57,0.96))]`}
     >
       <div className="absolute inset-0 bg-[radial-gradient(circle_at_top,_rgba(143,120,214,0.22),_transparent_44%),radial-gradient(circle_at_bottom,_rgba(200,169,94,0.18),_transparent_52%)]" />
       <div
@@ -109,7 +103,7 @@ function BackFace({
             compact ? 'text-[1.7rem] leading-tight' : 'text-3xl'
           }`}
         >
-          {partial ? veiledLabel ?? name : name}
+          {name}
         </p>
         <p
           className={`mt-2 text-[var(--color-muted)] ${
@@ -119,9 +113,6 @@ function BackFace({
           {caption ?? 'Hold the question gently.'}
         </p>
       </div>
-      {partial ? (
-        <div className="absolute inset-0 bg-[linear-gradient(180deg,_rgba(255,255,255,0.08),_rgba(255,255,255,0.02)_32%,_rgba(9,13,24,0.42)_100%)] backdrop-blur-[1.5px]" />
-      ) : null}
     </div>
   );
 }
@@ -141,7 +132,6 @@ export function TarotCardVisual({
 }: TarotCardVisualProps) {
   const messages = getMessages(locale);
   const revealMode = mode === 'reveal';
-  const partialMode = mode === 'partial';
   const compactMode = details === 'compact';
   const orientationLabel =
     orientation === 'upright'
@@ -159,19 +149,17 @@ export function TarotCardVisual({
       } shadow-[0_20px_60px_rgba(0,0,0,0.28)] ${className}`}
     >
       <div
-        className={`absolute flex items-center justify-between uppercase text-[var(--color-accent-soft)] ${
+        className={`absolute z-10 flex items-center justify-between gap-3 rounded-full border border-white/8 bg-[rgba(8,12,24,0.78)] uppercase text-[var(--color-accent-soft)] backdrop-blur-md ${
           compactMode
-            ? 'inset-x-5 top-3 text-[9px] tracking-[0.28em]'
-            : 'inset-x-7 top-4 text-[10px] tracking-[0.35em]'
+            ? 'inset-x-4 top-3 px-3 py-1.5 text-[9px] tracking-[0.24em]'
+            : 'inset-x-5 top-4 px-4 py-2 text-[10px] tracking-[0.3em]'
         }`}
       >
-        <span>{label ?? getCardMetaLabel(locale, arcana, suit)}</span>
-        <span>
-          {revealMode
-            ? orientationLabel
-            : partialMode
-              ? messages.tarotCard.softReveal
-              : messages.tarotCard.cardBack}
+        <span className="min-w-0 truncate pr-2">
+          {label ?? getCardMetaLabel(locale, arcana, suit)}
+        </span>
+        <span className="shrink-0">
+          {revealMode ? orientationLabel : messages.tarotCard.cardBack}
         </span>
       </div>
 
@@ -195,8 +183,6 @@ export function TarotCardVisual({
           name={name}
           label={label ?? messages.tarotCard.arcanaMirror}
           caption={caption ?? messages.tarotCard.holdQuestion}
-          veiledLabel={locale === 'zh' ? '未揭示' : 'Veiled'}
-          partial={partialMode}
           compact={compactMode}
         />
       )}
@@ -213,9 +199,7 @@ export function TarotCardVisual({
                 ? orientation === 'upright'
                   ? messages.tarotCard.uprightPerspective
                   : messages.tarotCard.reversedPerspective
-                : partialMode
-                  ? messages.tarotCard.emerging
-                  : messages.tarotCard.gathering}
+                : messages.tarotCard.gathering}
           </p>
         </figcaption>
       )}

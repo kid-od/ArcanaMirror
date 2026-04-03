@@ -1,4 +1,5 @@
 import {
+  BadRequestException,
   Injectable,
   InternalServerErrorException,
   NotFoundException,
@@ -172,7 +173,7 @@ export class ReadingsService {
   ) {}
 
   async createSingle(dto: CreateSingleReadingDto, locale: AppLocale = 'en') {
-    const [drawnCard] = await this.drawCards(1);
+    const [drawnCard] = await this.resolveSelections(dto.selectedCardIds, 1);
     const card = this.toDrawnCard(drawnCard, 'single', 'en');
     const interpretation = this.buildSingleInterpretation(
       dto.question,
@@ -205,7 +206,7 @@ export class ReadingsService {
       'present',
       'future',
     ];
-    const drawnCards = await this.drawCards(3);
+    const drawnCards = await this.resolveSelections(dto.selectedCardIds, 3);
     const cards = drawnCards.map((card, index) =>
       this.toDrawnCard(card, positions[index], 'en'),
     );
@@ -253,6 +254,46 @@ export class ReadingsService {
     return this.serializeReading(reading, locale);
   }
 
+  private async resolveSelections(
+    selectedCardIds: string[] | undefined,
+    count: number,
+  ) {
+    if (selectedCardIds === undefined) {
+      return this.drawCards(count);
+    }
+
+    if (selectedCardIds.length !== count) {
+      throw new BadRequestException(
+        count === 1
+          ? 'Exactly one selected card is required for a single-card reading.'
+          : 'Exactly three selected cards are required for a three-card reading.',
+      );
+    }
+
+    const uniqueIds = new Set(selectedCardIds);
+
+    if (uniqueIds.size !== selectedCardIds.length) {
+      throw new BadRequestException(
+        'Selected cards must be unique within a reading.',
+      );
+    }
+
+    const drawPool = await this.tarotCardsService.getDrawPool();
+    const cardsById = new Map(drawPool.map((card) => [card.id, card] as const));
+    const missingIds = selectedCardIds.filter((cardId) => !cardsById.has(cardId));
+
+    if (missingIds.length > 0) {
+      throw new BadRequestException(
+        `Selected cards were not found: ${missingIds.join(', ')}`,
+      );
+    }
+
+    return selectedCardIds.map((cardId) => ({
+      card: cardsById.get(cardId)!,
+      orientation: this.randomOrientation(),
+    }));
+  }
+
   private async drawCards(count: number) {
     const pool = [...(await this.tarotCardsService.getDrawPool())];
 
@@ -269,9 +310,12 @@ export class ReadingsService {
 
     return pool.slice(0, count).map((card) => ({
       card,
-      orientation:
-        Math.random() < 0.3 ? 'reversed' : ('upright' as Orientation),
+      orientation: this.randomOrientation(),
     }));
+  }
+
+  private randomOrientation(): Orientation {
+    return Math.random() < 0.3 ? 'reversed' : 'upright';
   }
 
   private toDrawnCard(
